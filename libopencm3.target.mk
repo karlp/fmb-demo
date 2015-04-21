@@ -31,14 +31,4 @@ OOCD		?= openocd
 OOCD_INTERFACE	?= stlink-v2
 OOCD_BOARD	?= stm32ldiscovery
 
-################################################################################
-# Black Magic Probe specific variables
-# Set the BMP_PORT to a serial port and then BMP is used for flashing
-BMP_PORT	?=
-
-################################################################################
-# texane/stlink specific variables
-#STLINK_PORT	?= :4242
-
-
 include ../libopencm3.rules.mk
