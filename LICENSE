@@ -1,0 +1,11 @@
+The project itself:
+Consider to be under your choice of:
+* BSD 2 Clause
+* Apache 2
+* MIT
+* ISC
+
+libopencm3, freertos and freemodbus are under their own licenses.  Educate
+yourself before use.
+
+Karl Palsson <karlp@tweak.net.au>
