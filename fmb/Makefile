@@ -24,7 +24,7 @@ VPATH += $(FREERTOS_SRC) $(FREERTOS_PORT) $(FREERTOS_MMG)
 # Inclusion of header files
 INCLUDES = $(patsubst %,-I%, . $(FREERTOS_INC) $(FREERTOS_PORT) $(OPENCM3_INC) )
 
-CFLAGS += -Os -g -std=c99 
+CFLAGS += -Os -ggdb3 -std=c99
 CFLAGS += -mcpu=cortex-m3 -msoft-float -mthumb
 CFLAGS +=  $(INCLUDES) -fno-common -MD
 CFLAGS += -Wall -Wextra -Wshadow -Wno-unused-variable -Wimplicit-function-declaration
