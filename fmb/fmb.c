@@ -162,6 +162,11 @@ eMBErrorCode eMBRegInputCB(UCHAR * pucRegBuffer, USHORT usAddress,
 eMBErrorCode eMBRegHoldingCB(UCHAR * pucRegBuffer, USHORT usAddress,
 	USHORT usNRegs, eMBRegisterMode eMode)
 {
+	/*
+	 * FreeModbus has a hard++, converting address to reg#, but calling it address
+	 * We prefer raw addresses please, 0 based.
+	 */
+	usAddress--;
 	eMBErrorCode status = MB_ENOERR;
 	table[0]++;
 	if (eMode == MB_REG_WRITE) {
