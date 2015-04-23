@@ -1,5 +1,7 @@
 
 PROJECT	    = fmb
+BUILD_DIR   = bin
+
 PREFIX	    ?= arm-none-eabi-
 CC	    = $(PREFIX)gcc
 LD	    = $(PREFIX)gcc
@@ -40,21 +42,27 @@ LDFLAGS += -Wl,--undefined=uxTopUsedPriority
 CFILES = fmb.c
 CFILES += $(FREERTOS_SRCS)
 
-OBJS = $(CFILES:.c=.o)
+OBJS = $(CFILES:%.c=$(BUILD_DIR)/%.o)
 
 all: $(PROJECT).elf $(PROJECT).bin
 flash: $(PROJECT).flash
 
-$(PROJECT).elf: $(OBJS)
+# Need a special rule to have a bin dir
+$(BUILD_DIR)/%.o: %.c
+	@#printf "  CC      $(subst $(shell pwd)/,,$(@))\n"
+	@mkdir -p $(dir $@)
+	$(Q)$(CC) $(CFLAGS) -o $@ -c $<
+
+%.elf: $(OBJS)
 	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
-$(PROJECT).bin: $(PROJECT).elf
+%.bin: %.elf
 	$(OBJCOPY) -O binary  $< $@
 
-$(PROJECT).lss: $(PROJECT).elf
+%.lss: %.elf
 	$(OBJDUMP) -h -S $< > $@
 
-$(PROJECT).list: $(PROJECT).elf
+%.list: %.elf
 	$(OBJDUMP) -S $< > $@
 
 %.flash: %.elf
@@ -66,7 +74,7 @@ $(PROJECT).list: $(PROJECT).elf
 		-c "shutdown" $(NULL)
 
 clean:
-	rm -f *.elf *.o *.d *.hex *.list *.sym *.bin *.lss
+	rm -rf $(BUILD_DIR) $(PROJECT).{elf,bin} $(PROJECT).{list,lss}
 
 .PHONY: all clean
 
