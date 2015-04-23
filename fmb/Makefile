@@ -19,10 +19,20 @@ FREERTOS_MMG = $(FREERTOS_DIR)/Source/portable/MemMang
 FREERTOS_SRCS = list.c queue.c tasks.c timers.c port.c heap_1.c
 FREERTOS_SRCS += FreeRTOS-openocd.c
 
+FREEMODBUS_DIR = ../freemodbus-v1.5.0
+FREEMODBUS_INC = $(FREEMODBUS_DIR)/include
+FREEMODBUS_DIRS = $(FREEMODBUS_DIR) $(patsubst %,$(FREEMODBUS_DIR)/%, functions rtu ascii tcp)
+FREEMODBUS_SRCS := $(notdir $(foreach dir,$(FREEMODBUS_DIRS),$(wildcard $(dir)/*.c)))
+
+FREEMODBUS_PORT_DIR = mb_port
+FREEMODBUS_PORT_SRCS = $(notdir $(wildcard $(FREEMODBUS_PORT_DIR)/*.c))
+
 VPATH += $(FREERTOS_SRC) $(FREERTOS_PORT) $(FREERTOS_MMG)
+VPATH += $(FREEMODBUS_DIRS)
+VPATH += $(FREEMODBUS_PORT_DIR)
 
 # Inclusion of header files
-INCLUDES = $(patsubst %,-I%, . $(FREERTOS_INC) $(FREERTOS_PORT) $(OPENCM3_INC) )
+INCLUDES = $(patsubst %,-I%, . $(FREERTOS_INC) $(FREERTOS_PORT) $(OPENCM3_INC) $(FREEMODBUS_INC) $(FREEMODBUS_DIRS) $(FREEMODBUS_PORT_DIR))
 
 CFLAGS += -Os -ggdb3 -std=c99
 CFLAGS += -mcpu=cortex-m3 -msoft-float -mthumb
@@ -41,6 +51,8 @@ LDFLAGS += -Wl,--undefined=uxTopUsedPriority
 
 CFILES = fmb.c
 CFILES += $(FREERTOS_SRCS)
+CFILES += $(FREEMODBUS_SRCS)
+CFILES += $(FREEMODBUS_PORT_SRCS)
 
 OBJS = $(CFILES:%.c=$(BUILD_DIR)/%.o)
 

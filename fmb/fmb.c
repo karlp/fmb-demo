@@ -5,13 +5,22 @@
  * karl Palsson <karlp@tweak.net.au>
  */
 
+#include <assert.h>
+#include <string.h>
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "timers.h"
+
+#include "mb.h"
+
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
+
+#define REG_BASE	0x2000
+static USHORT table[10];
 
 static void clock_setup(void)
 {
@@ -32,49 +41,50 @@ static void gpio_setup(void)
  */
 static void setup_systick(void)
 {
-        /* 32MHz / 8 => 4000000 counts per second. */
-        systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV8);
-        /* 4000000/4000 = 1000 overflows per second - every 1ms one interrupt */
-        systick_set_reload(3999);
-        systick_interrupt_enable();
-        systick_counter_enable();
+	/* 32MHz / 8 => 4000000 counts per second. */
+	systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV8);
+	/* 4000000/4000 = 1000 overflows per second - every 1ms one interrupt */
+	systick_set_reload(3999);
+	systick_interrupt_enable();
+	systick_counter_enable();
 }
 
 
 /* Manage the blue led raw, green led from freertos */
 extern void xPortSysTickHandler(void);
 volatile uint64_t ksystick;
+
 void sys_tick_handler(void)
 {
 	ksystick++;
 	if (ksystick % 500 == 0) {
-		//gpio_toggle(GPIOB, GPIO6);
+		gpio_toggle(GPIOB, GPIO6);
 	}
 	xPortSysTickHandler();
 }
 
-static void prvTimerBlue( TimerHandle_t xTimer ) {
-	(void)xTimer;
+static void prvTimerBlue(TimerHandle_t xTimer)
+{
+	(void) xTimer;
 	gpio_toggle(GPIOB, GPIO6);
 }
 
-static void prvTaskGreenBlink1( void *pvParameters )
+static void prvTaskGreenBlink1(void *pvParameters)
 {
-	(void)pvParameters;
-        while (1)
-        {
+	(void) pvParameters;
+	while (1) {
 		vTaskDelay(portTICK_PERIOD_MS * 1000);
 		gpio_toggle(GPIOB, GPIO7);
-        }
+	}
 
-        /* Tasks must not attempt to return from their implementing
-        function or otherwise exit.  In newer FreeRTOS port
-        attempting to do so will result in an configASSERT() being
-        called if it is defined.  If it is necessary for a task to
-        exit then have the task call vTaskDelete( NULL ) to ensure
-        its exit is clean. */
-        vTaskDelete( NULL );
-    }
+	/* Tasks must not attempt to return from their implementing
+	function or otherwise exit.  In newer FreeRTOS port
+	attempting to do so will result in an configASSERT() being
+	called if it is defined.  If it is necessary for a task to
+	exit then have the task call vTaskDelete( NULL ) to ensure
+	its exit is clean. */
+	vTaskDelete(NULL);
+}
 
 static TimerHandle_t xBlueTimer;
 
@@ -83,42 +93,111 @@ int main(void)
 	clock_setup();
 	gpio_setup();
 	setup_systick();
-	
-	xTaskCreate(prvTaskGreenBlink1, "gblink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+	table[1] = 0xcafe;
+	table[9] = 0xdead;
+
+
+#if 0
+	xTaskCreate(prvTaskGreenBlink1, "green.blink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 	xBlueTimer = xTimerCreate("blue.blink", 200 * portTICK_PERIOD_MS, true, 0, prvTimerBlue);
 	if (xBlueTimer) {
-		xTimerStart(xBlueTimer, 0);
+		if (xTimerStart(xBlueTimer, 0) != pdTRUE) {
+
+		}
 	} else {
 		/* FIXME - trace here please */
 	}
-	
-	vTaskStartScheduler();
 
-	while(1) {
+	vTaskStartScheduler();
+#endif
+
+	eMBErrorCode eStatus;
+	eStatus = eMBInit(MB_RTU, 0x0A, 1, 19200, MB_PAR_EVEN);
+	assert(eStatus == MB_ENOERR);
+
+	const char *report_data = "karlwashere";
+	eStatus = eMBSetSlaveID(0x34, TRUE, (UCHAR *) report_data, strlen(report_data));
+	assert(eStatus == MB_ENOERR);
+
+	eStatus = eMBEnable();
+	assert(eStatus == MB_ENOERR);
+
+	while (1) {
+		eMBPoll();
 	}
 
 	return 0;
 }
 
-
-void vAssertCalled( const char * const pcFileName, unsigned long ulLine )
+void vAssertCalled(const char * const pcFileName, unsigned long ulLine)
 {
-volatile unsigned long ulSetToNonZeroInDebuggerToContinue = 0;
+	volatile unsigned long ulSetToNonZeroInDebuggerToContinue = 0;
 
-        /* Parameters are not used. */
-        ( void ) ulLine;
-        ( void ) pcFileName;
+	/* Parameters are not used. */
+	(void) ulLine;
+	(void) pcFileName;
 
-        taskENTER_CRITICAL();
-        {
-                while( ulSetToNonZeroInDebuggerToContinue == 0 )
-                {
-                        /* Use the debugger to set ulSetToNonZeroInDebuggerToContinue to a
-                        non zero value to step out of this function to the point that raised
-                        this assert(). */
-                        __asm volatile( "NOP" );
-                        __asm volatile( "NOP" );
-                }
-        }
-        taskEXIT_CRITICAL();
+	taskENTER_CRITICAL();
+	{
+		while (ulSetToNonZeroInDebuggerToContinue == 0) {
+			/* Use the debugger to set ulSetToNonZeroInDebuggerToContinue to a
+			non zero value to step out of this function to the point that raised
+			this assert(). */
+			__asm volatile( "NOP");
+			__asm volatile( "NOP");
+		}
+	}
+	taskEXIT_CRITICAL();
+}
+
+eMBErrorCode eMBRegInputCB(UCHAR * pucRegBuffer, USHORT usAddress,
+	USHORT usNRegs)
+{
+	(void)pucRegBuffer;
+	(void)usAddress;
+	(void)usNRegs;
+	return MB_ENOREG;
+}
+
+eMBErrorCode eMBRegHoldingCB(UCHAR * pucRegBuffer, USHORT usAddress,
+	USHORT usNRegs, eMBRegisterMode eMode)
+{
+	eMBErrorCode status = MB_ENOERR;
+	table[0]++;
+	if (eMode == MB_REG_WRITE) {
+		/* For now... */
+		return MB_EINVAL;
+	}
+
+	if ((usAddress >= REG_BASE)
+		&& (usAddress + usNRegs <= REG_BASE + (sizeof(table) / sizeof(table[0])))) {
+		for (int i = 0; i < usNRegs; i++) {
+			*pucRegBuffer++ = (UCHAR) (table[i] >> 8);
+			*pucRegBuffer++ = (UCHAR) (table[i] & 0xFF);
+		}
+	} else {
+		status = MB_ENOREG;
+	}
+
+	return status;
+
+}
+
+eMBErrorCode eMBRegCoilsCB(UCHAR * pucRegBuffer, USHORT usAddress,
+	USHORT usNCoils, eMBRegisterMode eMode)
+{
+	(void)pucRegBuffer;
+	(void)usAddress;
+	(void)usNCoils;
+	(void)eMode;
+	return MB_ENOREG;
+}
+
+eMBErrorCode eMBRegDiscreteCB(UCHAR * pucRegBuffer, USHORT usAddress,
+	USHORT usNDiscrete)
+{
+	(void)pucRegBuffer;
+	(void)usAddress;
+	(void)usNDiscrete;
+	return MB_ENOREG;
 }
