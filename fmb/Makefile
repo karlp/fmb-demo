@@ -15,6 +15,7 @@ FREERTOS_INC = $(FREERTOS_DIR)/Source/include
 FREERTOS_SRC = $(FREERTOS_DIR)/Source
 FREERTOS_MMG = $(FREERTOS_DIR)/Source/portable/MemMang
 FREERTOS_SRCS = list.c queue.c tasks.c timers.c port.c heap_1.c
+FREERTOS_SRCS += FreeRTOS-openocd.c
 
 VPATH += $(FREERTOS_SRC) $(FREERTOS_PORT) $(FREERTOS_MMG)
 
@@ -34,6 +35,7 @@ LDSCRIPT = $(OPENCM3_DIR)/lib/stm32/l1/stm32l15xxb.ld
 LDFLAGS += -I . -lc -T$(LDSCRIPT) -L$(OPENCM3_DIR)/lib -nostartfiles -Wl,--gc-sections
 LDFLAGS += -lopencm3_stm32l1
 LDFLAGS += -specs=nosys.specs
+LDFLAGS += -Wl,--undefined=uxTopUsedPriority
 
 CFILES = fmb.c
 CFILES += $(FREERTOS_SRCS)
