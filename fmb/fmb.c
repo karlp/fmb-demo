@@ -7,6 +7,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "timers.h"
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/rcc.h>
@@ -47,9 +48,14 @@ void sys_tick_handler(void)
 {
 	ksystick++;
 	if (ksystick % 500 == 0) {
-		gpio_toggle(GPIOB, GPIO6);
+		//gpio_toggle(GPIOB, GPIO6);
 	}
 	xPortSysTickHandler();
+}
+
+static void prvTimerBlue( TimerHandle_t xTimer ) {
+	(void)xTimer;
+	gpio_toggle(GPIOB, GPIO6);
 }
 
 static void prvTaskGreenBlink1( void *pvParameters )
@@ -70,6 +76,7 @@ static void prvTaskGreenBlink1( void *pvParameters )
         vTaskDelete( NULL );
     }
 
+static TimerHandle_t xBlueTimer;
 
 int main(void)
 {
@@ -78,6 +85,12 @@ int main(void)
 	setup_systick();
 	
 	xTaskCreate(prvTaskGreenBlink1, "gblink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+	xBlueTimer = xTimerCreate("blue.blink", 200 * portTICK_PERIOD_MS, true, 0, prvTimerBlue);
+	if (xBlueTimer) {
+		xTimerStart(xBlueTimer, 0);
+	} else {
+		/* FIXME - trace here please */
+	}
 	
 	vTaskStartScheduler();
 
