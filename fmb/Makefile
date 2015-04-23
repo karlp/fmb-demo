@@ -38,7 +38,8 @@ CFLAGS += -Os -ggdb3 -std=c99
 CFLAGS += -mcpu=cortex-m3 -msoft-float -mthumb
 CFLAGS +=  $(INCLUDES) -fno-common -MD
 CFLAGS += -Wall -Wextra -Wshadow -Wno-unused-variable -Wimplicit-function-declaration
-CFLAGS += -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes
+CFLAGS += -Wredundant-decls -Wstrict-prototypes
+#CFLAGS += -Wmissing-prototypes
 CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += $(OPENCM3_DEFS)
 
