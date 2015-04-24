@@ -31,6 +31,7 @@
 #ifndef _MB_H
 #define _MB_H
 
+#include <assert.h>
 #include "port.h"
 
 #ifdef __cplusplus

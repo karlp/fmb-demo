@@ -73,6 +73,7 @@ BOOL            xMBPortSerialInit( UCHAR ucPort, ULONG ulBaudRate,
 
 void            vMBPortClose( void );
 
+/* KARL - this is never called anywhere, ever at all */
 void            xMBPortSerialClose( void );
 
 void            vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable );
@@ -90,6 +91,7 @@ void            vMBPortTimersEnable( void );
 
 void            vMBPortTimersDisable( void );
 
+/* KARL - only used for ASCII mode */
 void            vMBPortTimersDelay( USHORT usTimeOutMS );
 
 /* ----------------------- Callback for the protocol stack ------------------*/
