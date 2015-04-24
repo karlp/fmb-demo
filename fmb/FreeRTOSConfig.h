@@ -55,9 +55,9 @@ void vAssertCalled( const char * const pcFileName, unsigned long ulLine );
 #define configTIMER_TASK_STACK_DEPTH            configMINIMAL_STACK_SIZE
 
 /* Interrupt nesting behaviour configuration. */
-#define configKERNEL_INTERRUPT_PRIORITY         240
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY    95
-#define configMAX_API_CALL_INTERRUPT_PRIORITY   95
+#define configKERNEL_INTERRUPT_PRIORITY         (0x0f << 4)
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY    (5 << 4)
+#define configMAX_API_CALL_INTERRUPT_PRIORITY   (5 << 4)
 
 /* Define to trap errors during development. */
 #define configASSERT( x )     if( ( x ) == 0 ) vAssertCalled( __FILE__, __LINE__ )

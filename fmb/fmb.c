@@ -13,8 +13,10 @@
 #include "timers.h"
 
 #include "mb.h"
+#include "syscfg.h"
 
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/cm3/scb.h>
 #include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
@@ -58,7 +60,7 @@ void sys_tick_handler(void)
 {
 	ksystick++;
 	if (ksystick % 500 == 0) {
-		gpio_toggle(GPIOB, GPIO6);
+		//gpio_toggle(GPIOB, GPIO6);
 	}
 	xPortSysTickHandler();
 }
@@ -88,6 +90,30 @@ static void prvTaskGreenBlink1(void *pvParameters)
 
 static TimerHandle_t xBlueTimer;
 
+static void prvTaskModbus(void *pvParameters)
+{
+	(void) pvParameters;
+	while (1) {
+		eMBErrorCode eStatus;
+		eStatus = eMBInit(MB_RTU, 0x0A, 1, 19200, MB_PAR_EVEN);
+		assert(eStatus == MB_ENOERR);
+
+		const char *report_data = "karlwashere";
+		eStatus = eMBSetSlaveID(0x34, TRUE, (UCHAR *) report_data, strlen(report_data));
+		assert(eStatus == MB_ENOERR);
+
+		eStatus = eMBEnable();
+		assert(eStatus == MB_ENOERR);
+		/* TODO - either exit the task, or let the task restart and try
+		 * and fix itself if these asserts failed */
+
+		while (1) {
+			eMBPoll();
+			/* TODO - should I yield here? */
+		}
+	}
+}
+
 int main(void)
 {
 	clock_setup();
@@ -95,10 +121,17 @@ int main(void)
 	setup_systick();
 	table[1] = 0xcafe;
 	table[9] = 0xdead;
+	scb_set_priority_grouping(SCB_AIRCR_PRIGROUP_GROUP16_NOSUB);
+
+	// FIXME - this works, but what priority is what really?!
+#define IRQ2NVIC_PRIOR(x)	((x)<<4)
+        nvic_set_priority(NVIC_SYSTICK_IRQ, IRQ2NVIC_PRIOR(1));
+        nvic_set_priority(MB_USART_NVIC, IRQ2NVIC_PRIOR(6));
+        nvic_set_priority(MB_TIMER_NVIC, IRQ2NVIC_PRIOR(7));
 
 
-#if 0
 	xTaskCreate(prvTaskGreenBlink1, "green.blink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+	xTaskCreate(prvTaskModbus, "modbus", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 	xBlueTimer = xTimerCreate("blue.blink", 200 * portTICK_PERIOD_MS, true, 0, prvTimerBlue);
 	if (xBlueTimer) {
 		if (xTimerStart(xBlueTimer, 0) != pdTRUE) {
@@ -109,22 +142,6 @@ int main(void)
 	}
 
 	vTaskStartScheduler();
-#endif
-
-	eMBErrorCode eStatus;
-	eStatus = eMBInit(MB_RTU, 0x0A, 1, 19200, MB_PAR_EVEN);
-	assert(eStatus == MB_ENOERR);
-
-	const char *report_data = "karlwashere";
-	eStatus = eMBSetSlaveID(0x34, TRUE, (UCHAR *) report_data, strlen(report_data));
-	assert(eStatus == MB_ENOERR);
-
-	eStatus = eMBEnable();
-	assert(eStatus == MB_ENOERR);
-
-	while (1) {
-		eMBPoll();
-	}
 
 	return 0;
 }

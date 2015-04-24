@@ -43,6 +43,8 @@ typedef int32_t LONG;
 void vMBPortEnterCritical( void );
 void vMBPortExitCritical( void );
 
+void vMBPortSetISR(BOOL inside);
+BOOL bMBPortIsInISR(void);
 
 #ifdef	__cplusplus
 }

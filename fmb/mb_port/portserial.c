@@ -9,6 +9,8 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/usart.h>
 
+#include "FreeRTOS.h"
+
 #include "mb.h"
 
 #include "syscfg.h"
@@ -93,9 +95,13 @@ vMBPortSerialEnable(BOOL xRxEnable, BOOL xTxEnable)
 	}
 
 	if (xTxEnable) {
+		/* TODO - this is where rs485 driver control goes */
+		//USART_CR1(MB_USART) &= ~USART_CR1_TCIE;
 		usart_enable_tx_interrupt(MB_USART);
 	} else {
+		/* ANd this is where we enable the txc interrupt to turn off rs485*/
 		usart_disable_tx_interrupt(MB_USART);
+		//USART_CR1(MB_USART) |= USART_CR1_TCIE;
 	}
 }
 
@@ -120,17 +126,25 @@ xMBPortSerialPutByte(CHAR ucByte)
  */
 void MB_USART_ISR(void)
 {
+	vMBPortSetISR(TRUE);
+	int tasks_ready = 0;
 	if (usart_get_interrupt_source(MB_USART, USART_SR_RXNE)) {
 		if (pxMBFrameCBByteReceived()) {
-			/* TODO rtos signal ctx switch here */
+			tasks_ready++;
 		}
 	}
 	/* TODO - if you're using RS485, you may want to use TC here and fiddle
 	 with a tx enable pin */
 	if (usart_get_interrupt_source(MB_USART, USART_SR_TXE)) {
 		if (pxMBFrameCBTransmitterEmpty()) {
-			/* TODO rtos signal ctx switch here */
+			tasks_ready++;
 		}
 	}
+	if (usart_get_interrupt_source(MB_USART, USART_SR_TC)) {
+		/* rs485 driver enable here */
+		//USART_CR1(MB_USART) &= ~USART_CR1_TCIE;
+	}
+	vMBPortSetISR(FALSE);
+	portEND_SWITCHING_ISR( tasks_ready ? pdTRUE : pdFALSE );
 }
 

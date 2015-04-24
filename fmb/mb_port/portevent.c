@@ -6,46 +6,40 @@
  */
 #include <stdbool.h>
 #include <stdint.h>
-#include <libopencm3/cm3/cortex.h>
+#include "FreeRTOS.h"
 #include "mb.h"
+#include "queue.h"
+#include "timers.h"
 
-static bool has_entry;
-static eMBEventType entry;
+static QueueHandle_t queue;
 
 BOOL xMBPortEventInit(void)
 {
-	has_entry = false;
-	return TRUE;
+	/* Make a FreeRTOS queue, only needs a single entry */
+	queue = xQueueCreate( 1, sizeof( eMBEventType ) );
+	if (queue) {
+		return TRUE;
+	} else {
+		return FALSE;
+	}
 }
 
 BOOL xMBPortEventPost(eMBEventType eEvent)
 {
-	if (has_entry) {
-		return FALSE;
+	if (bMBPortIsInISR()) {
+		xQueueSendFromISR(queue, &eEvent, pdFALSE);
+	} else {
+		xQueueSend(queue, &eEvent, pdFALSE);
 	}
-	entry = eEvent;
-	has_entry = true;
 	return TRUE;
 }
 
 BOOL xMBPortEventGet(eMBEventType * eEvent)
 {
+	/* FIXME - this value feels too long... */
 	BOOL had_event = FALSE;
-	if (has_entry) {
-		*eEvent = entry;
-		has_entry = false;
+	if (pdTRUE == xQueueReceive(queue, eEvent, portTICK_PERIOD_MS * 50)) {
 		had_event = TRUE;
 	}
 	return had_event;
-}
-
-/* These are empty for now, but would presumably need work with an RTOS */
-void vMBPortEnterCritical(void)
-{
-	cm_disable_interrupts();
-}
-
-void vMBPortExitCritical(void)
-{
-	cm_enable_interrupts();
 }

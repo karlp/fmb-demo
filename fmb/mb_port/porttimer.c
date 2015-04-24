@@ -8,6 +8,7 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/timer.h>
 
+#include "FreeRTOS.h"
 #include "mb.h"
 
 #include "syscfg.h"
@@ -50,10 +51,14 @@ void vMBPortTimersDisable(void)
 
 void MB_TIMER_ISR(void)
 {
+	int tasks_ready = 0;
+	vMBPortSetISR(TRUE);
 	if (timer_get_flag(MB_TIMER, TIM_SR_UIF)) {
 		timer_clear_flag(MB_TIMER, TIM_SR_UIF);
 		if (pxMBPortCBTimerExpired()) {
-			/* TODO rtos signal ctx switch here */
+			tasks_ready++;
 		}
 	}
+	vMBPortSetISR(FALSE);
+	portEND_SWITCHING_ISR(tasks_ready ? pdTRUE : pdFALSE);
 }
