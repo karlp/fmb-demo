@@ -1,0 +1,2 @@
+This directory contains a raw freemodbus port using libopencm3, without any
+rtos
