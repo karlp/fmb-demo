@@ -91,8 +91,9 @@ void            vMBPortTimersEnable( void );
 
 void            vMBPortTimersDisable( void );
 
-/* KARL - only used for ASCII mode */
+#if MB_ASCII_ENABLED > 0
 void            vMBPortTimersDelay( USHORT usTimeOutMS );
+#endif
 
 /* ----------------------- Callback for the protocol stack ------------------*/
 
