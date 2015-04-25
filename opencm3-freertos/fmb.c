@@ -52,16 +52,10 @@ static void setup_systick(void)
 }
 
 
-/* Manage the blue led raw, green led from freertos */
 extern void xPortSysTickHandler(void);
-volatile uint64_t ksystick;
 
 void sys_tick_handler(void)
 {
-	ksystick++;
-	if (ksystick % 500 == 0) {
-		//gpio_toggle(GPIOB, GPIO6);
-	}
 	xPortSysTickHandler();
 }
 
