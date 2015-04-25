@@ -1,5 +1,5 @@
 
-PROJECT	    = fmb
+PROJECT	    = fmb-opencm3-freertos
 BUILD_DIR   = bin
 
 PREFIX	    ?= arm-none-eabi-

@@ -1,0 +1,2 @@
+This is a freemodbus demo using libopencm3 for the hardware, and freertos for
+the support os layer.
