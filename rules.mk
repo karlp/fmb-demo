@@ -43,6 +43,8 @@ LDFLAGS += -specs=nano.specs
 #LDFLAGS += -specs=nosys.specs
 LDFLAGS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
 LDFLAGS += -Wl,--undefined=uxTopUsedPriority
+# OPTIONAL
+#LDFLAGS += -Wl,-Map=$(PROJECT).map
 
 CFILES += $(FREEMODBUS_SRCS)
 CFILES += $(FREEMODBUS_PORT_SRCS)
