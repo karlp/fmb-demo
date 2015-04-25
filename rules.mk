@@ -38,6 +38,7 @@ LDSCRIPT = $(OPENCM3_DIR)/lib/stm32/l1/stm32l15xxb.ld
 
 LDFLAGS += -I . -lc -T$(LDSCRIPT) -L$(OPENCM3_DIR)/lib -nostartfiles -Wl,--gc-sections
 LDFLAGS += -lopencm3_stm32l1
+LDFLAGS += -specs=nano.specs
 # nosys is only in newer gcc-arm-embedded...
 #LDFLAGS += -specs=nosys.specs
 LDFLAGS += -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group
