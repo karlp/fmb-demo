@@ -80,8 +80,9 @@ eMBSetSlaveID( UCHAR ucSlaveID, BOOL xIsRunning,
 eMBException
 eMBFuncReportSlaveID( UCHAR * pucFrame, USHORT * usLen )
 {
-    memcpy( &pucFrame[MB_PDU_DATA_OFF], &ucMBSlaveID[0], ( size_t )usMBSlaveIDLen );
-    *usLen = ( USHORT )( MB_PDU_DATA_OFF + usMBSlaveIDLen );
+    pucFrame[MB_PDU_DATA_OFF] = usMBSlaveIDLen;
+    memcpy( &pucFrame[MB_PDU_DATA_OFF + 1], &ucMBSlaveID[0], ( size_t )usMBSlaveIDLen );
+    *usLen = ( USHORT )( MB_PDU_DATA_OFF + 1 + usMBSlaveIDLen);
     return MB_EX_NONE;
 }
 
