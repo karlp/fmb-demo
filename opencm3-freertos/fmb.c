@@ -180,16 +180,20 @@ eMBErrorCode eMBRegHoldingCB(UCHAR * pucRegBuffer, USHORT usAddress,
 	usAddress--;
 	eMBErrorCode status = MB_ENOERR;
 	table[0]++;
-	if (eMode == MB_REG_WRITE) {
-		/* For now... */
-		return MB_EINVAL;
-	}
 
 	if ((usAddress >= REG_BASE)
 		&& (usAddress + usNRegs <= REG_BASE + (sizeof(table) / sizeof(table[0])))) {
-		for (int i = 0; i < usNRegs; i++) {
-			*pucRegBuffer++ = (UCHAR) (table[i] >> 8);
-			*pucRegBuffer++ = (UCHAR) (table[i] & 0xFF);
+		int idx = usAddress - REG_BASE;
+		if (eMode == MB_REG_READ) {
+			for (int i = 0; i < usNRegs; i++) {
+				*pucRegBuffer++ = (UCHAR) (table[idx+i] >> 8);
+				*pucRegBuffer++ = (UCHAR) (table[idx+i] & 0xFF);
+			}
+		} else if (eMode == MB_REG_WRITE) {
+			for (int i = 0; i < usNRegs; i++) {
+				table[idx+i] = *pucRegBuffer++ << 8;
+				table[idx+i] |= *pucRegBuffer++;
+			}
 		}
 	} else {
 		status = MB_ENOREG;
