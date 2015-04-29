@@ -83,7 +83,7 @@ $(PROJECT).elf: $(OBJS)
 %.flash: %.elf
 	@printf "  FLASH\t$<\n"
 	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
-		-f board/$(OOCD_BOARD).cfg \
+		-f target/$(OOCD_TARGET).cfg \
 		-c "program $(*).elf verify reset exit" \
 		$(NULL)
 
@@ -94,5 +94,5 @@ clean:
 
 OOCD            ?= openocd
 OOCD_INTERFACE  ?= stlink-v2
-OOCD_BOARD      ?= stm32ldiscovery
+OOCD_TARGET     ?= stm32l1
 
