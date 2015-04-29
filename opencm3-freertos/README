@@ -1,2 +1,5 @@
 This is a freemodbus demo using libopencm3 for the hardware, and freertos for
 the support os layer.
+
+You should investigate syscfg.h to select running on the standard
+stm32ldiscovery board, or a "custom" board that enables RS485 driver control.

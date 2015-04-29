@@ -3,6 +3,6 @@ FreeModbus example code, using libopencm3 as the hardware layer.
 Developed and tested primarily on the stm32l discovery board.
 
 Plans:
- * RS485 support
+ * RS485 support (implemented in the FreeRTOS demo)
  * Examples with other RTOSs
 
