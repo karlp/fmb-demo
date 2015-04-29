@@ -32,10 +32,12 @@ static void clock_setup(void)
 
 static void gpio_setup(void)
 {
-	/* blinken lights on disco board */
+	/* blinken lights */
 	rcc_periph_clock_enable(RCC_GPIOB);
-	gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO6);
-	gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO7);
+	gpio_mode_setup(LED_BLUE_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_BLUE_PIN);
+#if defined(LED_GREEN_PORT)
+	gpio_mode_setup(LED_GREEN_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_GREEN_PIN);
+#endif
 }
 
 /**
@@ -62,15 +64,16 @@ void sys_tick_handler(void)
 static void prvTimerBlue(TimerHandle_t xTimer)
 {
 	(void) xTimer;
-	gpio_toggle(GPIOB, GPIO6);
+	gpio_toggle(LED_BLUE_PORT, LED_BLUE_PIN);
 }
 
+#if defined (LED_GREEN_PORT)
 static void prvTaskGreenBlink1(void *pvParameters)
 {
 	(void) pvParameters;
 	while (1) {
 		vTaskDelay(portTICK_PERIOD_MS * 1000);
-		gpio_toggle(GPIOB, GPIO7);
+		gpio_toggle(LED_GREEN_PORT, LED_GREEN_PIN);
 	}
 
 	/* Tasks must not attempt to return from their implementing
@@ -81,6 +84,7 @@ static void prvTaskGreenBlink1(void *pvParameters)
 	its exit is clean. */
 	vTaskDelete(NULL);
 }
+#endif
 
 static TimerHandle_t xBlueTimer;
 
@@ -124,7 +128,9 @@ int main(void)
         nvic_set_priority(MB_TIMER_NVIC, IRQ2NVIC_PRIOR(7));
 
 
+#if defined (LED_GREEN_PORT)
 	xTaskCreate(prvTaskGreenBlink1, "green.blink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+#endif
 	xTaskCreate(prvTaskModbus, "modbus", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 	xBlueTimer = xTimerCreate("blue.blink", 200 * portTICK_PERIOD_MS, true, 0, prvTimerBlue);
 	if (xBlueTimer) {
