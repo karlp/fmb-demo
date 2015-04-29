@@ -91,6 +91,7 @@ clean:
 	rm -rf $(BUILD_DIR) $(PROJECT).{elf,bin} $(PROJECT).{list,lss}
 
 .PHONY: all clean
+-include $(OBJS:.o=.d)
 
 OOCD            ?= openocd
 OOCD_INTERFACE  ?= stlink-v2
