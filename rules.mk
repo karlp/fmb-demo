@@ -84,9 +84,8 @@ $(PROJECT).elf: $(OBJS)
 	@printf "  FLASH\t$<\n"
 	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
 		-f board/$(OOCD_BOARD).cfg \
-		-c "program $(*).elf" \
-		-c "reset" \
-		-c "shutdown" $(NULL)
+		-c "program $(*).elf verify reset exit" \
+		$(NULL)
 
 clean:
 	rm -rf $(BUILD_DIR) $(PROJECT).{elf,bin} $(PROJECT).{list,lss}
