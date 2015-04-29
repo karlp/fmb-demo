@@ -1,6 +1,12 @@
 
 BUILD_DIR   ?= bin
 
+# Be silent per default, but 'make V=1' will show all compiler calls.
+ifneq ($(V),1)
+Q               := @
+NULL            := 2>/dev/null
+endif
+
 PREFIX	    ?= arm-none-eabi-
 CC	    = $(PREFIX)gcc
 LD	    = $(PREFIX)gcc
@@ -56,15 +62,17 @@ flash: $(PROJECT).flash
 
 # Need a special rule to have a bin dir
 $(BUILD_DIR)/%.o: %.c
-	@#printf "  CC      $(subst $(shell pwd)/,,$(@))\n"
+	@printf "  CC\t$<\n"
 	@mkdir -p $(dir $@)
 	$(Q)$(CC) $(CFLAGS) -o $@ -c $<
 
 $(PROJECT).elf: $(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
+	@printf "  LD\t$@\n"
+	$(Q)$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 %.bin: %.elf
-	$(OBJCOPY) -O binary  $< $@
+	@printf "  OBJCOPY\t$@\n"
+	$(Q)$(OBJCOPY) -O binary  $< $@
 
 %.lss: %.elf
 	$(OBJDUMP) -h -S $< > $@
@@ -73,7 +81,7 @@ $(PROJECT).elf: $(OBJS)
 	$(OBJDUMP) -S $< > $@
 
 %.flash: %.elf
-	@printf "  FLASH   $<\n"
+	@printf "  FLASH\t$<\n"
 	$(Q)$(OOCD) -f interface/$(OOCD_INTERFACE).cfg \
 		-f board/$(OOCD_BOARD).cfg \
 		-c "program $(*).elf" \
