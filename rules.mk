@@ -88,7 +88,7 @@ $(PROJECT).elf: $(OBJS)
 		$(NULL)
 
 clean:
-	rm -rf $(BUILD_DIR) $(PROJECT).{elf,bin} $(PROJECT).{list,lss}
+	rm -rf $(BUILD_DIR) $(PROJECT).{elf,bin} $(PROJECT).{list,lss,map}
 
 .PHONY: all clean
 -include $(OBJS:.o=.d)
