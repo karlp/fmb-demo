@@ -1,0 +1,5 @@
+This is a freemodbus demo using ChibiOS/RT with it's complete HAL+scheduler.
+Apparently, you can also use just the scheduler
+
+NOTE! DOESN'T WORK YET!
+
