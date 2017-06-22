@@ -27,7 +27,11 @@ xMBPortSerialInit(UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eP
 
 	gpio_mode_setup(MB_USART_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, MB_USART_PINS);
 	gpio_set_af(MB_USART_PORT, GPIO_AF7, MB_USART_PINS);
-	/* FIXME - if you're using rs485, you probably want a tx-enable pin here */
+#if defined(MB_RS485_DE_PORT)
+	/* fixme - assume port already enabled in rcc */
+	gpio_mode_setup(MB_RS485_DE_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, MB_RS485_DE_PIN);
+	gpio_clear(MB_RS485_DE_PORT, MB_RS485_DE_PIN);
+#endif
 
 	/* Setup UART parameters. */
 	usart_set_baudrate(MB_USART, ulBaudRate);
@@ -93,9 +97,14 @@ vMBPortSerialEnable(BOOL xRxEnable, BOOL xTxEnable)
 	}
 
 	if (xTxEnable) {
+#if defined(MB_RS485_DE_PORT)
+		gpio_set(MB_RS485_DE_PORT, MB_RS485_DE_PIN);
+#endif
 		usart_enable_tx_interrupt(MB_USART);
 	} else {
 		usart_disable_tx_interrupt(MB_USART);
+		/* Enable TC so we know when to turn off the rs485 driver */
+		USART_CR1(MB_USART) |= USART_CR1_TCIE;
 	}
 }
 
@@ -120,17 +129,23 @@ xMBPortSerialPutByte(CHAR ucByte)
  */
 void MB_USART_ISR(void)
 {
-	if (usart_get_interrupt_source(MB_USART, USART_SR_RXNE)) {
+	if (usart_get_flag(MB_USART, USART_SR_RXNE)) {
 		if (pxMBFrameCBByteReceived()) {
 			/* TODO rtos signal ctx switch here */
 		}
 	}
-	/* TODO - if you're using RS485, you may want to use TC here and fiddle
-	 with a tx enable pin */
-	if (usart_get_interrupt_source(MB_USART, USART_SR_TXE)) {
+	if (usart_get_flag(MB_USART, USART_SR_TXE)) {
 		if (pxMBFrameCBTransmitterEmpty()) {
 			/* TODO rtos signal ctx switch here */
 		}
 	}
+	if (usart_get_flag(MB_USART, USART_SR_TC)) {
+		/* TC is used for rs485 */
+		USART_CR1(MB_USART) &= ~USART_CR1_TCIE;
+		USART_SR(MB_USART) &= ~USART_SR_TC;
+#if defined(MB_RS485_DE_PORT)
+		gpio_clear(MB_RS485_DE_PORT, MB_RS485_DE_PIN);
+#endif
+        }
 }
 

@@ -1,8 +1,12 @@
 FreeModbus example code, using libopencm3 as the hardware layer.
 
-Developed and tested primarily on the stm32l discovery board.
+Developed and tested primarily on the stm32l discovery board, edit "syscfg.h"
+in each directory to setup rs485 DE pin, led pins and uart pins.
+
+Status
+* opencm3-raw:  Working just fine with real rs485 hw.
+* opencm3-freemodbus:  Working just fine with real rs485 hw.
 
 Plans:
- * RS485 support (implemented in the FreeRTOS demo)
  * Examples with other RTOSs
 

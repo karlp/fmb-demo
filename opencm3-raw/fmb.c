@@ -13,6 +13,7 @@
 #include <libopencm3/stm32/gpio.h>
 
 #include "mb.h"
+#include "syscfg.h"
 
 #define REG_BASE	0x2000
 static USHORT table[10];
@@ -24,10 +25,9 @@ static void clock_setup(void)
 
 static void gpio_setup(void)
 {
-	/* blinken lights on disco board */
-	rcc_periph_clock_enable(RCC_GPIOB);
-	gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO6);
-	gpio_mode_setup(GPIOB, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, GPIO7);
+	/* blinken lights */
+	rcc_periph_clock_enable(RCC_GPIOA);
+	gpio_mode_setup(LED_BLUE_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_BLUE_PIN);
 }
 
 /**
@@ -50,7 +50,7 @@ void sys_tick_handler(void)
 {
 	ksystick++;
 	if (ksystick % 500 == 0) {
-		gpio_toggle(GPIOB, GPIO6);
+		gpio_toggle(LED_BLUE_PORT, LED_BLUE_PIN);
 	}
 }
 
