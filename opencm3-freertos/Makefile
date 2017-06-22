@@ -1,7 +1,8 @@
 
 PROJECT	    = fmb-opencm3-freertos
 
-FREERTOS_DIR = /home/karlp/src/FreeRTOSV8.2.1/FreeRTOS
+#FREERTOS_DIR = /home/karlp/src/FreeRTOSV8.2.1/FreeRTOS
+FREERTOS_DIR = /home/karlp/src/FreeRTOSv9.0.0/FreeRTOS
 FREERTOS_PORT = $(FREERTOS_DIR)/Source/portable/GCC/ARM_CM3
 FREERTOS_INC = $(FREERTOS_DIR)/Source/include
 FREERTOS_SRC = $(FREERTOS_DIR)/Source
