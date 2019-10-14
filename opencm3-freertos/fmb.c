@@ -17,7 +17,6 @@
 
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/scb.h>
-#include <libopencm3/cm3/systick.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 
@@ -27,7 +26,6 @@ static USHORT table[10];
 static void clock_setup(void)
 {
 	rcc_clock_setup_pll(&clock_config[CLOCK_VRANGE1_HSI_PLL_32MHZ]);
-	/* setup systick at ms for FreeRTOS */
 }
 
 static void gpio_setup(void)
@@ -39,27 +37,6 @@ static void gpio_setup(void)
 #if defined(LED_GREEN_PORT)
 	gpio_mode_setup(LED_GREEN_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, LED_GREEN_PIN);
 #endif
-}
-
-/**
- * Configure the systick timer for 1 msec
- */
-static void setup_systick(void)
-{
-	/* 32MHz / 8 => 4000000 counts per second. */
-	systick_set_clocksource(STK_CSR_CLKSOURCE_AHB_DIV8);
-	/* 4000000/4000 = 1000 overflows per second - every 1ms one interrupt */
-	systick_set_reload(3999);
-	systick_interrupt_enable();
-	systick_counter_enable();
-}
-
-
-extern void xPortSysTickHandler(void);
-
-void sys_tick_handler(void)
-{
-	xPortSysTickHandler();
 }
 
 static void prvTimerBlue(TimerHandle_t xTimer)
@@ -117,14 +94,12 @@ int main(void)
 {
 	clock_setup();
 	gpio_setup();
-	setup_systick();
 	table[1] = 0xcafe;
 	table[9] = 0xdead;
 	scb_set_priority_grouping(SCB_AIRCR_PRIGROUP_GROUP16_NOSUB);
 
 	// FIXME - this works, but what priority is what really?!
 #define IRQ2NVIC_PRIOR(x)	((x)<<4)
-        nvic_set_priority(NVIC_SYSTICK_IRQ, IRQ2NVIC_PRIOR(1));
         nvic_set_priority(MB_USART_NVIC, IRQ2NVIC_PRIOR(6));
         nvic_set_priority(MB_TIMER_NVIC, IRQ2NVIC_PRIOR(7));
 
