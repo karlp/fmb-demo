@@ -14,7 +14,8 @@ extern "C" {
 
 #define BHW_DISCO 0 /* Stock stm32l discovery board */
 #define BHW_CUSTOM_ALTERNATIVE 1 /* just some L1 board with a rs485 chip */
-#define BOARD_HARDWARE BHW_CUSTOM_ALTERNATIVE
+//#define BOARD_HARDWARE BHW_CUSTOM_ALTERNATIVE
+#define BOARD_HARDWARE BHW_DISCO
 
 #if (BOARD_HARDWARE == BHW_DISCO)
 #define MB_USART		USART2
