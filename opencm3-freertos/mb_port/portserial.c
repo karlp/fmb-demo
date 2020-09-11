@@ -134,17 +134,17 @@ void MB_USART_ISR(void)
 {
 	vMBPortSetISR(TRUE);
 	int tasks_ready = 0;
-	if (usart_get_interrupt_source(MB_USART, USART_SR_RXNE)) {
+	if (usart_get_flag(MB_USART, USART_SR_RXNE)) {
 		if (pxMBFrameCBByteReceived()) {
 			tasks_ready++;
 		}
 	}
-	if (usart_get_interrupt_source(MB_USART, USART_SR_TXE)) {
+	if (usart_get_flag(MB_USART, USART_SR_TXE)) {
 		if (pxMBFrameCBTransmitterEmpty()) {
 			tasks_ready++;
 		}
 	}
-	if (usart_get_interrupt_source(MB_USART, USART_SR_TC)) {
+	if (usart_get_flag(MB_USART, USART_SR_TC)) {
 		/* TC is used for rs485 */
 		USART_CR1(MB_USART) &= ~USART_CR1_TCIE;
 		USART_SR(MB_USART) &= ~USART_SR_TC;

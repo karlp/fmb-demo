@@ -20,7 +20,7 @@ BOOL xMBPortTimersInit(USHORT usTimeOut50us)
 	 with only 8 bit timers ;) */
 	rcc_periph_clock_enable(MB_TIMER_RCC);
 	nvic_enable_irq(MB_TIMER_NVIC);
-	timer_reset(MB_TIMER);
+	rcc_periph_reset_pulse(MB_TIMER_RST);
 	TIM_CNT(MB_TIMER) = 0;
 	/* from docs, needs a 20kHz counter */
 	timer_set_prescaler(MB_TIMER, 1599); // 32MHz/20kHz - 1
