@@ -25,7 +25,7 @@ static USHORT table[10];
 
 static void clock_setup(void)
 {
-	rcc_clock_setup_pll(&clock_config[CLOCK_VRANGE1_HSI_PLL_32MHZ]);
+	rcc_clock_setup_pll(&rcc_clock_config[RCC_CLOCK_VRANGE1_HSI_PLL_32MHZ]);
 }
 
 static void gpio_setup(void)

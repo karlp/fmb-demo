@@ -44,6 +44,7 @@ extern "C" {
 
 #define MB_TIMER TIM6
 #define MB_TIMER_RCC RCC_TIM6
+#define MB_TIMER_RST RST_TIM6
 #define MB_TIMER_NVIC NVIC_TIM6_IRQ
 #define MB_TIMER_ISR tim6_isr
 
