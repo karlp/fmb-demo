@@ -21,4 +21,8 @@ LDFLAGS += -Wl,--undefined=uxTopUsedPriority
 CFILES = fmb.c
 CFILES += $(FREERTOS_SRCS)
 
+ifneq (,$(RENODE))
+CFLAGS += -DRENODE=1
+endif
+
 include ../rules.mk

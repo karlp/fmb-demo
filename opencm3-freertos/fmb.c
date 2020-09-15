@@ -6,7 +6,10 @@
  */
 
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -15,13 +18,74 @@
 #include "mb.h"
 #include "syscfg.h"
 
+#include <libopencm3/cm3/itm.h>
 #include <libopencm3/cm3/nvic.h>
 #include <libopencm3/cm3/scb.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/stm32/usart.h>
 
 #define REG_BASE	0x2000
 static USHORT table[10];
+
+#define CONSOLE_USART USART3
+#define CONSOLE_USART_RCC RCC_USART3
+
+// the "console" isn't really setup properly for running on real hardware, we prefer trace there
+//#define REAL_HARDWARE 111
+#ifdef RENODE
+#define raw_putc(x)	usart_send_blocking(CONSOLE_USART, x)
+#warning "building for renode"
+#else
+#define raw_putc(x)	trace_send_blocking8(0, x)
+#warning "running on real hardware"
+#endif
+
+void trace_send_blocking8(int stimulus_port, char c)
+{
+	if (!(ITM_TER[0] & (1<<stimulus_port))) {
+		return;
+	}
+	while (!(ITM_STIM8(stimulus_port) & ITM_STIM_FIFOREADY));
+	ITM_STIM8(stimulus_port) = c;
+}
+
+
+int _write(int file, char *ptr, int len)
+{
+        int i;
+
+        if (file == STDOUT_FILENO || file == STDERR_FILENO) {
+                for (i = 0; i < len; i++) {
+                        if (ptr[i] == '\n') {
+                                raw_putc('\r');
+                        }
+			raw_putc(ptr[i]);
+                }
+                return i;
+        }
+        errno = EIO;
+        return -1;
+}
+
+/* This is "just enough" setup to get a "console" to renode,
+ * on CONSOLUE_USART, it does _not_ work on real hardware
+ * there's no gpios connected to it. */
+static void hack_console_setup(void)
+{
+	rcc_periph_clock_enable(CONSOLE_USART_RCC);
+
+	usart_set_baudrate(CONSOLE_USART, 115200);
+//	usart_set_databits(USART_CONSOLE, 8);
+//	usart_set_stopbits(USART_CONSOLE, USART_STOPBITS_1);
+//	usart_set_mode(USART_CONSOLE, USART_MODE_TX);
+//	usart_set_parity(USART_CONSOLE, USART_PARITY_NONE);
+//	usart_set_flow_control(USART_CONSOLE, USART_FLOWCONTROL_NONE);
+
+	/* Finally enable the USART. */
+	usart_enable(CONSOLE_USART);
+}
+
 
 static void clock_setup(void)
 {
@@ -71,8 +135,12 @@ static void prvTaskModbus(void *pvParameters)
 	(void) pvParameters;
 	while (1) {
 		eMBErrorCode eStatus;
-		eStatus = eMBInit(MB_RTU, 0x0A, 1, 19200, MB_PAR_EVEN);
+		printf("init modbus now\n");
+		// Try and avoid issues with renode?
+		//eStatus = eMBInit(MB_RTU, 0x0A, 1, 19200, MB_PAR_EVEN);
+		eStatus = eMBInit(MB_RTU, 0x0A, 1, 19200, MB_PAR_NONE);
 		assert(eStatus == MB_ENOERR);
+		printf("init done...\n");
 
 		const char *report_data = "karlwashere";
 		eStatus = eMBSetSlaveID(0x34, TRUE, (UCHAR *) report_data, strlen(report_data));
@@ -80,6 +148,7 @@ static void prvTaskModbus(void *pvParameters)
 
 		eStatus = eMBEnable();
 		assert(eStatus == MB_ENOERR);
+		(void)eStatus;
 		/* TODO - either exit the task, or let the task restart and try
 		 * and fix itself if these asserts failed */
 
@@ -96,7 +165,9 @@ int main(void)
 	gpio_setup();
 	table[1] = 0xcafe;
 	table[9] = 0xdead;
+	hack_console_setup();
 	scb_set_priority_grouping(SCB_AIRCR_PRIGROUP_GROUP16_NOSUB);
+	printf("starting up\n");
 
 	// FIXME - this works, but what priority is what really?!
 #define IRQ2NVIC_PRIOR(x)	((x)<<4)

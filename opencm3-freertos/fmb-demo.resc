@@ -1,0 +1,33 @@
+:name: fmb-demo
+:description: multi node fmb...
+
+using sysbus
+$name?="my-l1"
+mach create $name
+machine LoadPlatformDescription @platform-l1.repl
+
+cpu PerformanceInMips 32
+
+$bin?=@fmb-opencm3-freertos.elf
+
+# console on 3, modbus on2.
+showAnalyzer sysbus.uart3
+
+### Set random board UNIQUE ID, addresses for l1 cat 2 ###
+
+python "import _random"
+python "rand = _random.Random()"
+
+$id1 = `python "print rand.getrandbits(32)"`
+$id2 = `python "print rand.getrandbits(32)"`
+$id3 = `python "print rand.getrandbits(32)"`
+macro reset
+"""
+    sysbus LoadELF $bin
+
+    sysbus WriteDoubleWord 0x1FF80050 $id1
+    sysbus WriteDoubleWord 0x1FF80054 $id2
+    sysbus WriteDoubleWord 0x1FF80064 $id3
+"""
+
+runMacro $reset

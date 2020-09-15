@@ -2,6 +2,7 @@
  * Implements the required functions for FreeModbus from mbport.h
  * This implements the serial portion
  */
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <libopencm3/cm3/nvic.h>
@@ -115,12 +116,14 @@ BOOL
 xMBPortSerialGetByte(CHAR * pucByte)
 {
 	*pucByte = (CHAR) usart_recv(MB_USART);
+	printf("R<%#x>\n", *pucByte);
 	return TRUE;
 }
 
 BOOL
 xMBPortSerialPutByte(CHAR ucByte)
 {
+	printf("T[%#x]\n", ucByte);
 	usart_send(MB_USART, ucByte);
 	return TRUE;
 }
