@@ -2,6 +2,7 @@
  * Implements the required functions for FreeModbus from mbport.h
  * This implements the serial portion
  */
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <libopencm3/cm3/nvic.h>
@@ -115,12 +116,14 @@ BOOL
 xMBPortSerialGetByte(CHAR * pucByte)
 {
 	*pucByte = (CHAR) usart_recv(MB_USART);
+	printf("R<%#x>\n", *pucByte);
 	return TRUE;
 }
 
 BOOL
 xMBPortSerialPutByte(CHAR ucByte)
 {
+	printf("T[%#x]\n", ucByte);
 	usart_send(MB_USART, ucByte);
 	return TRUE;
 }
@@ -130,7 +133,7 @@ xMBPortSerialPutByte(CHAR ucByte)
 /**
  * STM32 uses one irq for both rx and tx
  */
-void MB_USART_ISR(void)
+void notMB_USART_ISR(void)
 {
 	vMBPortSetISR(TRUE);
 	int tasks_ready = 0;

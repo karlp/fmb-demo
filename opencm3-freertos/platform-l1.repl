@@ -1,0 +1,4 @@
+using "platforms/cpus/stm32l151.repl"
+
+led0: Miscellaneous.LED @ gpioPortB 6
+led1: Miscellaneous.LED @ gpioPortB 7
