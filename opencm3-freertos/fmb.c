@@ -16,7 +16,6 @@
 #include "timers.h"
 #include "queue.h"
 
-#include "mb.h"
 #include "syscfg.h"
 
 #include <libopencm3/cm3/itm.h>
@@ -26,8 +25,6 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/stm32/usart.h>
 
-#define REG_BASE	0x2000
-static USHORT table[10];
 
 #define CONSOLE_USART USART3
 #define CONSOLE_USART_RCC RCC_USART3
@@ -82,6 +79,36 @@ static void hack_console_setup(void)
 }
 
 
+void test_uart_setup(unsigned ulBaudRate)
+{
+
+	/* port pins and peripherals */
+	rcc_periph_clock_enable(MB_USART_RCC);
+	rcc_periph_clock_enable(MB_USART_RCC_PORT);
+
+	gpio_mode_setup(MB_USART_PORT, GPIO_MODE_AF, GPIO_PUPD_NONE, MB_USART_PINS);
+	gpio_set_af(MB_USART_PORT, GPIO_AF7, MB_USART_PINS);
+
+#if defined(MB_RS485_DE_PORT)
+	/* fixme - assume port already enabled in rcc */
+	gpio_mode_setup(MB_RS485_DE_PORT, GPIO_MODE_OUTPUT, GPIO_PUPD_NONE, MB_RS485_DE_PIN);
+	gpio_clear(MB_RS485_DE_PORT, MB_RS485_DE_PIN);
+#endif
+
+	/* Setup UART parameters. */
+	usart_set_baudrate(MB_USART, ulBaudRate);
+	usart_set_flow_control(MB_USART, USART_FLOWCONTROL_NONE);
+	usart_set_mode(MB_USART, USART_MODE_TX_RX);
+
+	usart_set_parity(MB_USART, USART_PARITY_NONE);
+
+	usart_disable_rx_interrupt(MB_USART);
+	usart_disable_tx_interrupt(MB_USART);
+	nvic_enable_irq(MB_USART_NVIC);
+	usart_enable(MB_USART);
+}
+
+
 static void clock_setup(void)
 {
 	rcc_clock_setup_pll(&rcc_clock_config[RCC_CLOCK_VRANGE1_HSI_PLL_32MHZ]);
@@ -125,31 +152,6 @@ static void prvTaskGreenBlink1(void *pvParameters)
 
 static TimerHandle_t xBlueTimer;
 
-static void prvTaskModbus(void *pvParameters)
-{
-	(void) pvParameters;
-	while (1) {
-		eMBErrorCode eStatus;
-		printf("init modbus now\n");
-		eStatus = eMBInit(MB_RTU, 0x0A, 1, 19200, MB_PAR_EVEN);
-		assert(eStatus == MB_ENOERR);
-		printf("init done...\n");
-
-		const char *report_data = "karlwashere";
-		eStatus = eMBSetSlaveID(0x34, TRUE, (UCHAR *) report_data, strlen(report_data));
-		assert(eStatus == MB_ENOERR);
-
-		eStatus = eMBEnable();
-		assert(eStatus == MB_ENOERR);
-		/* TODO - either exit the task, or let the task restart and try
-		 * and fix itself if these asserts failed */
-
-		while (1) {
-			eMBPoll();
-			/* TODO - should I yield here? */
-		}
-	}
-}
 
 static QueueHandle_t rxq, txq;
 
@@ -182,7 +184,7 @@ static void prvTaskRenodeEcho(void *pvParameters)
 	txq = xQueueCreate(16, 1);
 
 	// reuse the standard modbus port init
-	xMBPortSerialInit(-1, 115200, 8, MB_PAR_NONE);
+	test_uart_setup(115200);
 	usart_enable_rx_interrupt(MB_USART);
 
 	while (1) {
@@ -207,22 +209,17 @@ int main(void)
 {
 	clock_setup();
 	gpio_setup();
-	table[1] = 0xcafe;
-	table[9] = 0xdead;
 	hack_console_setup();
-	scb_set_priority_grouping(SCB_AIRCR_PRIGROUP_GROUP16_NOSUB);
 	printf("starting up\n");
 
-	// FIXME - this works, but what priority is what really?!
+	// Make sure we're above the freertos split
 #define IRQ2NVIC_PRIOR(x)	((x)<<4)
         nvic_set_priority(MB_USART_NVIC, IRQ2NVIC_PRIOR(6));
         nvic_set_priority(MB_TIMER_NVIC, IRQ2NVIC_PRIOR(7));
 
-
 #if defined (LED_GREEN_PORT)
 	xTaskCreate(prvTaskGreenBlink1, "green.blink", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 #endif
-	//xTaskCreate(prvTaskModbus, "modbus", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 	xTaskCreate(prvTaskRenodeEcho, "renode", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
 	xBlueTimer = xTimerCreate("blue.blink", 200 * portTICK_PERIOD_MS, true, 0, prvTimerBlue);
 	if (xBlueTimer) {
@@ -257,65 +254,4 @@ void vAssertCalled(const char * const pcFileName, unsigned long ulLine)
 		}
 	}
 	taskEXIT_CRITICAL();
-}
-
-eMBErrorCode eMBRegInputCB(UCHAR * pucRegBuffer, USHORT usAddress,
-	USHORT usNRegs)
-{
-	(void)pucRegBuffer;
-	(void)usAddress;
-	(void)usNRegs;
-	return MB_ENOREG;
-}
-
-eMBErrorCode eMBRegHoldingCB(UCHAR * pucRegBuffer, USHORT usAddress,
-	USHORT usNRegs, eMBRegisterMode eMode)
-{
-	/*
-	 * FreeModbus has a hard++, converting address to reg#, but calling it address
-	 * We prefer raw addresses please, 0 based.
-	 */
-	usAddress--;
-	eMBErrorCode status = MB_ENOERR;
-	table[0]++;
-
-	if ((usAddress >= REG_BASE)
-		&& (usAddress + usNRegs <= REG_BASE + (sizeof(table) / sizeof(table[0])))) {
-		int idx = usAddress - REG_BASE;
-		if (eMode == MB_REG_READ) {
-			for (int i = 0; i < usNRegs; i++) {
-				*pucRegBuffer++ = (UCHAR) (table[idx+i] >> 8);
-				*pucRegBuffer++ = (UCHAR) (table[idx+i] & 0xFF);
-			}
-		} else if (eMode == MB_REG_WRITE) {
-			for (int i = 0; i < usNRegs; i++) {
-				table[idx+i] = *pucRegBuffer++ << 8;
-				table[idx+i] |= *pucRegBuffer++;
-			}
-		}
-	} else {
-		status = MB_ENOREG;
-	}
-
-	return status;
-
-}
-
-eMBErrorCode eMBRegCoilsCB(UCHAR * pucRegBuffer, USHORT usAddress,
-	USHORT usNCoils, eMBRegisterMode eMode)
-{
-	(void)pucRegBuffer;
-	(void)usAddress;
-	(void)usNCoils;
-	(void)eMode;
-	return MB_ENOREG;
-}
-
-eMBErrorCode eMBRegDiscreteCB(UCHAR * pucRegBuffer, USHORT usAddress,
-	USHORT usNDiscrete)
-{
-	(void)pucRegBuffer;
-	(void)usAddress;
-	(void)usNDiscrete;
-	return MB_ENOREG;
 }
