@@ -1,51 +1,70 @@
 /*
- * Implements the required functions for FreeModbus from mbport.h
- * This implements the event portion, and is based on the BARE demo
- * but is unfortunately not included verbatim due to licensing
- * incompatibilities between the library core and the demo sample.
+ * Based on port.h from FreeModbus Atmel AT91SAM3S Demo Application:
+ *
+ * Copyright (C) 2010 Christian Walter <cwalter@embedded-solutions.at>
+ *
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *   notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *   notice, this list of conditions and the following disclaimer in the
+ *   documentation and/or other materials provided with the distribution.
+ * 3. The name of the author may not be used to endorse or promote products
+ *   derived from this software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * IF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * File: $Id$
  */
-#include <stdbool.h>
-#include <stdint.h>
-#include <libopencm3/cm3/cortex.h>
+
+/* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
+#include "mbport.h"
 
-static bool has_entry;
-static eMBEventType entry;
+/* ----------------------- Variables ----------------------------------------*/
+static eMBEventType eQueuedEvent;
+static BOOL     xEventInQueue;
 
-BOOL xMBPortEventInit(void)
+/* ----------------------- Start implementation -----------------------------*/
+BOOL
+xMBPortEventInit( void )
 {
-	has_entry = false;
-	return TRUE;
+    xEventInQueue = FALSE;
+    return TRUE;
 }
 
-BOOL xMBPortEventPost(eMBEventType eEvent)
+BOOL
+xMBPortEventPost( eMBEventType eEvent )
 {
-	if (has_entry) {
-		return FALSE;
-	}
-	entry = eEvent;
-	has_entry = true;
-	return TRUE;
+    if(xEventInQueue)
+        return FALSE;
+    xEventInQueue = TRUE;
+    eQueuedEvent = eEvent;
+    return TRUE;
 }
 
-BOOL xMBPortEventGet(eMBEventType * eEvent)
+BOOL
+xMBPortEventGet( eMBEventType * eEvent )
 {
-	BOOL had_event = FALSE;
-	if (has_entry) {
-		*eEvent = entry;
-		has_entry = false;
-		had_event = TRUE;
-	}
-	return had_event;
-}
+    BOOL            xEventHappened = FALSE;
 
-/* These are empty for now, but would presumably need work with an RTOS */
-void vMBPortEnterCritical(void)
-{
-	cm_disable_interrupts();
-}
-
-void vMBPortExitCritical(void)
-{
-	cm_enable_interrupts();
+    if( xEventInQueue )
+    {
+        *eEvent = eQueuedEvent;
+        xEventInQueue = FALSE;
+        xEventHappened = TRUE;
+    }
+    return xEventHappened;
 }

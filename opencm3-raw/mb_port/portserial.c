@@ -68,8 +68,7 @@ xMBPortSerialInit(UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eP
 	return true;
 }
 
-#define DO_YOU_WANT_PORT_LEVEL_CLOSE 1
-#if DO_YOU_WANT_PORT_LEVEL_CLOSE
+#if MB_PORT_HAS_CLOSE // set in port.h ... needed to use vMBPortClose function by freemodbus
 
 /* note that this conflicts with being able to open multiple uarts
  This is not required in freemodbus */

@@ -1,8 +1,6 @@
 /*
  * Implements the required functions for FreeModbus from mbport.h
- * This implements the event portion, and is based on the BARE demo
- * but is unfortunately not included verbatim due to licensing
- * incompatibilities between the library core and the demo sample.
+ * This implements the event portion.
  */
 #include <stdbool.h>
 #include <stdint.h>
