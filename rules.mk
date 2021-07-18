@@ -17,7 +17,7 @@ OPENCM3_DIR =../libopencm3
 OPENCM3_INC = $(OPENCM3_DIR)/include
 OPENCM3_DEFS = -DSTM32L1
 
-FREEMODBUS_DIR = ../freemodbus-v1.5.0
+FREEMODBUS_DIR = ../freemodbus/modbus
 FREEMODBUS_INC = $(FREEMODBUS_DIR)/include
 FREEMODBUS_DIRS = $(FREEMODBUS_DIR) $(patsubst %,$(FREEMODBUS_DIR)/%, functions rtu ascii tcp)
 FREEMODBUS_SRCS := $(notdir $(foreach dir,$(FREEMODBUS_DIRS),$(wildcard $(dir)/*.c)))
